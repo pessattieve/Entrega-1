@@ -1,0 +1,245 @@
+import 'dart:io';
+
+List<String> nomes = ['Ana'];
+List<String> telefones = ['123123123'];
+List<String> emails = ['Ana@gmail.com'];
+List<String> historico = [];
+
+void pausa() {
+  print('\nPressione ENTER para continuar...');
+  stdin.readLineSync();
+}
+
+void main() {
+  while (true) {
+    print('\n=== AGENDA ===');
+    print(
+      '1-Adicionar 2-Listar  3-Editar  4-Remover  5-Buscar  6-Estastiticas  7-Historico  8-Sair"',
+    );
+    stdout.write('');
+
+    String opcao = stdin.readLineSync() ?? '';
+
+    switch (opcao) {
+      case '1':
+        criarContato();
+        break;
+      case '2':
+        listaContatos();
+        pausa();
+        break;
+      case '3':
+        editarContatos();
+        break;
+      case '4':
+        removerContato();
+        pausa();
+        break;
+      case '5':
+        buscarContato();
+        pausa();
+        break;
+      case '6':
+        estatisticas();
+        pausa();
+        break;
+      case '7':
+        exibirHistorico();
+        pausa();
+        break;
+
+      case '8':
+        print('Volte logo!');
+        return;
+      default:
+        print('Opção inválida, tente novamente.');
+    }
+  }
+}
+
+bool indiceValido(int i) {
+  return i >= 0 && i < nomes.length;
+}
+
+void criarContato() {
+  stdout.write('Nome: ');
+  String nome = stdin.readLineSync() ?? '';
+
+  stdout.write('Telefone: ');
+  String tel = stdin.readLineSync() ?? '';
+
+  stdout.write('Email: ');
+  String email = stdin.readLineSync() ?? '';
+
+  nomes.add(nome);
+  telefones.add(tel);
+  emails.add(email);
+
+  salvarNoHistorico(Acao.criar, nome);
+
+  print('Contato adicionado!');
+  pausa();
+}
+
+void listaContatos() {
+  if (nomes.isEmpty) {
+    print('Agenda vazia.');
+    return;
+  }
+
+  for (int i = 0; i < nomes.length; i++) {
+    print('$i - ${nomes[i]} | ${telefones[i]} | ${emails[i]}');
+  }
+}
+
+void editarContatos() {
+  listaContatos();
+
+  stdout.write('\nQual índice deseja editar? ');
+  int i = int.tryParse(stdin.readLineSync() ?? '') ?? -1;
+
+  if (!indiceValido(i)) {
+    print('Índice inválido!');
+    pausa();
+    return;
+  }
+
+  stdout.write('Novo nome: ');
+  nomes[i] = stdin.readLineSync() ?? nomes[i];
+
+  stdout.write('Novo telefone: ');
+  telefones[i] = stdin.readLineSync() ?? telefones[i];
+
+  stdout.write('Novo email: ');
+  emails[i] = stdin.readLineSync() ?? emails[i];
+
+  print('Contato atualizado!');
+  pausa();
+}
+
+void buscarContato() {
+  stdout.write('Buscar nome: ');
+  String nome = stdin.readLineSync() ?? '';
+
+  bool encontrado = false;
+  for (int i = 0; i < nomes.length; i++) {
+    if (nomes[i].toLowerCase().contains(nome.toLowerCase())) {
+      print('$i - ${nomes[i]} | ${telefones[i]} | ${emails[i]}');
+      encontrado = true;
+    }
+  }
+
+  if (!encontrado) {
+    print('Contato não encontrado.');
+  }
+}
+
+String validarEmail(String email) {
+  bool emailValido = false;
+  while (!emailValido) {
+    if (RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      emailValido = true;
+    } else {
+      print('email inválido');
+      email = stdin.readLineSync() ?? '';
+      continue;
+    }
+  }
+  return email;
+}
+
+Future<String> validarNome() async {
+  while (true) {
+    stdout.write('nome: ');
+    String nome = stdin.readLineSync() ?? '';
+
+    if (nome.trim().isEmpty) {
+      print('*****nome inválido*****');
+      continue;
+    }
+    return nome;
+  }
+}
+
+String validarTelefone() {
+  while (true) {
+    stdout.write('Telefone (10 ou 11 dígitos): ');
+    String telefone = stdin.readLineSync() ?? '';
+
+    if (RegExp(r'^\d{10,11}$').hasMatch(telefone)) {
+      return telefone;
+    } else {
+      print('*****telefone inválido*****');
+    }
+  }
+}
+
+String existeNome() {
+  stdout.write('Digite o nome do contato: ');
+  String nome = stdin.readLineSync() ?? '';
+
+  for (int i = 0; i < nomes.length; i++) {
+    if (nomes[i].toLowerCase() == nome.toLowerCase()) {
+      return nomes[i];
+    }
+  }
+  return '';
+}
+
+void removerContato() {
+  listaContatos();
+
+  stdout.write('Digite o índice do contato para remover: ');
+  int? indice = int.tryParse(stdin.readLineSync() ?? '');
+
+  if (indice == null || !indiceValido(indice)) {
+    print('Índice inválido.');
+    return;
+  }
+  stdout.write('remover contato ${nomes[indice]}? (s/n): ');
+  String resposta = (stdin.readLineSync() ?? '').toLowerCase();
+
+  if (resposta != 's') {
+    nomes.removeAt(indice);
+    telefones.removeAt(indice);
+    emails.removeAt(indice);
+
+    print('Contato removido com sucesso!');
+  } else {
+    print('Remoção cancelada.');
+  }
+}
+
+enum Acao { criar, editar, remover, listar }
+
+void exibirHistorico() {
+  print('\n=== HISTÓRICO DE AÇÕES ===');
+  if (historico.isEmpty) {
+    print('Nenhuma ação registrada ainda.');
+    return;
+  }
+  for (String registro in historico) {
+    print(registro);
+  }
+}
+
+void salvarNoHistorico(Acao acao, String nome) {
+  String acaoTexto = acao.toString().split('.').last.toUpperCase();
+  historico.add('[$acaoTexto] Contato: $nome');
+}
+
+void estatisticas() {
+  int comEmail = 0;
+  String maisLongo = '';
+  for (int i = 0; i < nomes.length; i++) {
+    if (emails[i].isNotEmpty) {
+      comEmail++;
+    }
+    if (nomes[i].length > maisLongo.length) {
+      maisLongo = nomes[i];
+    }
+  }
+  print('Total de contatos: ${nomes.length}');
+  print('Contatos com email: $comEmail');
+  print('contato com nome mais longo: $maisLongo');
+}
